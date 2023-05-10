@@ -1,0 +1,8 @@
+version: '3'
+services:
+  subparser:
+    image: cracktc/subparser
+    ports:
+      - 4447:4447
+    volumes:
+      - ./config.yml:/app/config.yml
