@@ -31,7 +31,9 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Build
-      run: ./build.sh
-    - name: Push
-      run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/subparser:latest
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: ./target
+        push: true
+        tags: cracktc/subparser:latest
