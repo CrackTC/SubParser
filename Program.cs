@@ -1,6 +1,4 @@
-﻿using YamlDotNet.Serialization;
-
-namespace top.cracktc.SubParser
+﻿namespace top.cracktc.SubParser
 {
 
     internal class Program
@@ -14,16 +12,8 @@ namespace top.cracktc.SubParser
             return (port is > 0 and < 65536) ? port : defaultPort;
         }
 
-        private static ClashConfig GetCustomConfig()
-        {
-            string filePath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "config.yml";
-            return new Deserializer().Deserialize<ClashConfig>(File.ReadAllText(filePath));
-        }
-
         private static void Main()
         {
-            var config = GetCustomConfig();
-
             string customConfigPath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "./config/config.yml";
             var handler = new RequestHandler(customConfigPath);
 
