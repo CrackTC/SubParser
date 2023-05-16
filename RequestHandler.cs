@@ -105,6 +105,9 @@ namespace top.cracktc.SubParser
             string absolutePath = Path.GetFullPath(path);
 
             PhysicalFileProvider fileProvider = new(Path.GetDirectoryName(absolutePath)!);
+
+            fileProvider.UsePollingFileWatcher = true;
+
             var fileChangeToken = fileProvider.Watch(Path.GetFileName(absolutePath));
 
             Action<object?> callback = null!;
