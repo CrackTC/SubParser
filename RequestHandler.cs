@@ -10,10 +10,17 @@ namespace top.cracktc.SubParser
         private ISerializer Serializer { get; }
         private IDeserializer Deserializer { get; }
 
-        private ClashDns? Dns { get; }
-        private IEnumerable<ClashProxy>? Proxies { get; }
-        private IEnumerable<string>? Rules { get; }
-        private IEnumerable<ClashProxyGroup>? ProxyGroups { get; }
+        private void OnConfigChanged(object source, FileSystemEventArgs e)
+        {
+            Console.WriteLine($"config changed: {e.FullPath}");
+            _CustomConfig = GetCustomConfig(e.FullPath);
+        }
+        private ClashConfig? _CustomConfig;
+
+        private ClashDns? Dns => _CustomConfig?.Dns;
+        private IEnumerable<ClashProxy>? Proxies => _CustomConfig?.Proxies;
+        private IEnumerable<string>? Rules => _CustomConfig?.Rules;
+        private IEnumerable<ClashProxyGroup>? ProxyGroups => _CustomConfig?.ProxyGroups;
 
         private static void SendMethodNotAllowed(HttpListenerResponse response)
         {
@@ -88,16 +95,25 @@ namespace top.cracktc.SubParser
             }
         }
 
-        public RequestHandler(ClashDns? dns, IEnumerable<ClashProxy>? proxies, IEnumerable<string>? rules, IEnumerable<ClashProxyGroup>? proxyGroups)
+        private static ClashConfig GetCustomConfig(string path)
+            => new Deserializer().Deserialize<ClashConfig>(File.ReadAllText(path));
+
+        public RequestHandler(string customConfigPath)
         {
             Client = new();
             Serializer = new SerializerBuilder().ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull).Build();
             Deserializer = new Deserializer();
 
-            Dns = dns;
-            Proxies = proxies;
-            Rules = rules;
-            ProxyGroups = proxyGroups;
+            var watcher = new FileSystemWatcher
+            {
+                Path = Path.GetDirectoryName(customConfigPath) ?? throw new ArgumentException("invalid path"),
+                Filter = Path.GetFileName(customConfigPath),
+                NotifyFilter = NotifyFilters.LastWrite,
+                EnableRaisingEvents = true
+            };
+            watcher.Changed += OnConfigChanged;
+
+            _CustomConfig = GetCustomConfig(customConfigPath);
         }
     }
 }

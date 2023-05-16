@@ -24,11 +24,8 @@ namespace top.cracktc.SubParser
         {
             var config = GetCustomConfig();
 
-            var dns = config.Dns;
-            var proxies = config.Proxies;
-            var rules = config.Rules;
-            var proxyGroups = config.ProxyGroups;
-            var handler = new RequestHandler(dns, proxies, rules, proxyGroups);
+            string customConfigPath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "config.yml";
+            var handler = new RequestHandler(customConfigPath);
 
             string host = Environment.GetEnvironmentVariable("HOST") ?? "*";
             int port = GetPort();
