@@ -1,20 +1,21 @@
 using System.Net;
 using System.Text;
 using YamlDotNet.Serialization;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 
 namespace top.cracktc.SubParser
 {
     internal class RequestHandler
     {
-        private FileSystemWatcher Watcher { get; }
         private HttpClient Client { get; init; }
         private ISerializer Serializer { get; }
         private IDeserializer Deserializer { get; }
 
-        private void OnConfigChanged(object source, FileSystemEventArgs e)
+        private void OnConfigChanged(object? state)
         {
-            Console.WriteLine($"config changed: {e.FullPath}");
-            _CustomConfig = GetCustomConfig(e.FullPath);
+            Console.WriteLine($"config changed");
+            _CustomConfig = GetCustomConfig((string)state!);
         }
         private ClashConfig? _CustomConfig;
 
@@ -99,27 +100,37 @@ namespace top.cracktc.SubParser
         private static ClashConfig GetCustomConfig(string path)
             => new Deserializer().Deserialize<ClashConfig>(File.ReadAllText(path));
 
+        private static void SetupFileWatcher(string path, Action<string> changeCallback)
+        {
+            string absolutePath = Path.GetFullPath(path);
+
+            PhysicalFileProvider fileProvider = new(Path.GetDirectoryName(absolutePath)!);
+            var fileChangeToken = fileProvider.Watch(Path.GetFileName(absolutePath));
+
+            Action<object?> callback = null!;
+            callback = state =>
+            {
+                (var absolutePath, var fileProvider, var fileChangeToken) = ((string, PhysicalFileProvider, IChangeToken))state!;
+                changeCallback(absolutePath);
+
+                fileChangeToken = fileProvider.Watch(Path.GetFileName(absolutePath));
+                fileChangeToken.RegisterChangeCallback(callback, (absolutePath, fileProvider, fileChangeToken));
+            };
+
+            fileChangeToken.RegisterChangeCallback(callback, (absolutePath, fileProvider, fileChangeToken));
+        }
+
         public RequestHandler(string customConfigPath)
         {
             Client = new();
             Serializer = new SerializerBuilder().ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull).Build();
             Deserializer = new Deserializer();
 
-            Watcher = new FileSystemWatcher
-            {
-                Path = Path.GetDirectoryName(customConfigPath) ?? throw new ArgumentException("invalid path"),
-                Filter = Path.GetFileName(customConfigPath),
-                NotifyFilter = NotifyFilters.LastWrite,
-                EnableRaisingEvents = true
-            };
-            Watcher.Changed += OnConfigChanged;
-
-            _CustomConfig = GetCustomConfig(customConfigPath);
+            SetupFileWatcher(customConfigPath, OnConfigChanged);
         }
 
         ~RequestHandler()
         {
-            Watcher.Dispose();
             Client.Dispose();
         }
     }
