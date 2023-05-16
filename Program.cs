@@ -24,7 +24,7 @@ namespace top.cracktc.SubParser
         {
             var config = GetCustomConfig();
 
-            string customConfigPath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "config.yml";
+            string customConfigPath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "./config.yml";
             var handler = new RequestHandler(customConfigPath);
 
             string host = Environment.GetEnvironmentVariable("HOST") ?? "*";

@@ -6,6 +6,7 @@ namespace top.cracktc.SubParser
 {
     internal class RequestHandler
     {
+        private FileSystemWatcher Watcher { get; }
         private HttpClient Client { get; init; }
         private ISerializer Serializer { get; }
         private IDeserializer Deserializer { get; }
@@ -104,16 +105,22 @@ namespace top.cracktc.SubParser
             Serializer = new SerializerBuilder().ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull).Build();
             Deserializer = new Deserializer();
 
-            var watcher = new FileSystemWatcher
+            Watcher = new FileSystemWatcher
             {
                 Path = Path.GetDirectoryName(customConfigPath) ?? throw new ArgumentException("invalid path"),
                 Filter = Path.GetFileName(customConfigPath),
                 NotifyFilter = NotifyFilters.LastWrite,
                 EnableRaisingEvents = true
             };
-            watcher.Changed += OnConfigChanged;
+            Watcher.Changed += OnConfigChanged;
 
             _CustomConfig = GetCustomConfig(customConfigPath);
+        }
+
+        ~RequestHandler()
+        {
+            Watcher.Dispose();
+            Client.Dispose();
         }
     }
 }
